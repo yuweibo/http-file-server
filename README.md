@@ -32,6 +32,8 @@ GET /path
 
 ### 3. 上传文件
 
+curl  -F "filename=@jenkins.war" http://ip:port/upload\?name\=tmp2/jenkins1.war
+
 采用 `POST` 方式上传文件，`URL` 参数中传参数 `name` 表示上传的文件名，`POST` 内容为文件内容。
 ```
 POST /upload?name=filename
