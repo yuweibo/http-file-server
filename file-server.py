@@ -42,6 +42,7 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         query = urllib.splitquery(self.path)
         path = urllib.unquote_plus(query[0]).decode("utf-8", "ignore")
         queryParams = {}
+        print path
 
         if "?" in self.path:
             if query[1]:
@@ -56,12 +57,12 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_header("content-type","application/json")
         if os.path.isfile(fn):
             f = open(fn, "rb")
-            content = f.read()
+            content = f.read().decode('utf-8')
             f.close()
             contenttype,_ = mimetypes.guess_type(fn)
             if contenttype:
-                self.send_header("content-type",contenttype)
-        elif os.path.isdir(fn):
+                self.send_header("content-type",contenttype+";charset=utf-8")
+        elif os.path.isdir(fn):            
             filelist = []
             for filename in os.listdir(fn):
                 if filename[0] != ".":
@@ -70,7 +71,23 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                         filename += os.sep
                     mtime = os.path.getmtime(filepath)
                     filelist.append({"filename":filename,"mtime":mtime})
-            content = json.dumps(filelist)
+                    filelist = sorted(filelist,key = lambda e:e.__getitem__('mtime'))
+                   
+            # content html
+            self.send_header("content-type","text/html")
+            content+="<head><meta charset=\"UTF-8\"></head>"
+            content+="<html><body>"
+            content+="<h2>Directory listing for /</h2>"
+            content+="<hr>"
+            content+="<ul>"
+            for o in  filelist:
+                content+="<li><a href=\""+path+o["filename"]+"\">"+time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(o["mtime"]))+"-"+o["filename"]+"</a>\n"
+            
+            content+="</ul>"
+            content+="<hr>"
+            content+="</body></html>"
+            # content json
+            # content = json.dumps(filelist)
         else:
             print(g_filepath, path, fn)
             content = "<h1>404<h1>"
