@@ -20,9 +20,10 @@ mimetypes.init()
 
 g_filepath = ""
 
+
 def transDicts(params):
-    dicts={}
-    if len(params)==0:
+    dicts = {}
+    if len(params) == 0:
         return
     params = params.split("&")
     for param in params:
@@ -33,8 +34,9 @@ def transDicts(params):
         dicts[key] = value
     return dicts
 
+
 class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-    def end_headers (self):
+    def end_headers(self):
         self.send_header("access-control-allow-origin", "*")
         BaseHTTPServer.BaseHTTPRequestHandler.end_headers(self)
 
@@ -50,19 +52,19 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
         fn = "%s%s" % (g_filepath, path)
         fn = urllib.unquote_plus(fn).decode("utf-8", "ignore")
-        fn = fn.replace("/",os.sep)
+        fn = fn.replace("/", os.sep)
 
         content = ""
         self.send_response(200)
-        self.send_header("content-type","application/json")
+        self.send_header("content-type", "application/json")
         if os.path.isfile(fn):
             f = open(fn, "rb")
             content = f.read().decode('utf-8')
             f.close()
-            contenttype,_ = mimetypes.guess_type(fn)
+            contenttype, _ = mimetypes.guess_type(fn)
             if contenttype:
-                self.send_header("content-type",contenttype+";charset=utf-8")
-        elif os.path.isdir(fn):            
+                self.send_header("content-type", contenttype+";charset=utf-8")
+        elif os.path.isdir(fn):
             filelist = []
             for filename in os.listdir(fn):
                 if filename[0] != ".":
@@ -70,28 +72,30 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     if os.path.isdir(filepath):
                         filename += os.sep
                     mtime = os.path.getmtime(filepath)
-                    filelist.append({"filename":filename,"mtime":mtime})
-                    filelist = sorted(filelist,key = lambda e:e.__getitem__('mtime'))
-                   
+                    filelist.append({"filename": filename, "mtime": mtime})
+                    filelist = sorted(
+                        filelist, key=lambda e: e.__getitem__('mtime'))
+
             # content html
-            self.send_header("content-type","text/html")
-            content+="<head><meta charset=\"UTF-8\"></head>"
-            content+="<html><body>"
-            content+="<h2>Directory listing for /</h2>"
-            content+="<hr>"
-            content+="<ul>"
-            for o in  filelist:
-                content+="<li><a href=\""+path+o["filename"]+"\">"+time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(o["mtime"]))+"-"+o["filename"]+"</a>\n"
-            
-            content+="</ul>"
-            content+="<hr>"
-            content+="</body></html>"
+            self.send_header("content-type", "text/html")
+            content += "<head><meta charset=\"UTF-8\"></head>"
+            content += "<html><body>"
+            content += "<h2>Directory listing for "+path+"</h2>"
+            content += "<hr>"
+            content += "<ul>"
+            for o in filelist:
+                content += "<li><a href=\""+path+o["filename"]+"\">"+time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(o["mtime"]))+"-"+o["filename"]+"</a>\n"
+
+            content += "</ul>"
+            content += "<hr>"
+            content += "</body></html>"
             # content json
             # content = json.dumps(filelist)
         else:
             print(g_filepath, path, fn)
             content = "<h1>404<h1>"
-            self.send_header("content-type","text/html")
+            self.send_header("content-type", "text/html")
 
         self.end_headers()
         self.wfile.write(content)
@@ -105,8 +109,8 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             if query[1]:
                 queryParams = transDicts(query[1])
 
-        resultdict = {"result":0, "msg":"OK"}
-        if path=="/upload":
+        resultdict = {"result": 0, "msg": "OK"}
+        if path == "/upload":
             if queryParams.has_key("name"):
                 filesize = int(self.headers["content-length"])
                 filecontent = self.rfile.read(filesize)
@@ -120,7 +124,7 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     resultdict.result = 1
                     resultdict.msg = "File name is directory."
                 else:
-                    f = open(fn,"wb")
+                    f = open(fn, "wb")
                     f.write(filecontent)
                     f.close()
             else:
@@ -132,12 +136,14 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
         content = json.dumps(resultdict)
         self.send_response(200)
-        self.send_header("content-type","application/json")
+        self.send_header("content-type", "application/json")
         self.end_headers()
         self.wfile.write(content)
 
+
 class ThreadingHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
     pass
+
 
 def run(port):
     print "HTTP File Server Started at port:", port
@@ -145,16 +151,17 @@ def run(port):
     httpd = ThreadingHTTPServer(("", port), HTTPRequestHandler)
     httpd.serve_forever()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     g_filepath = "./files/"
-    if len(sys.argv)>=2:
+    if len(sys.argv) >= 2:
         g_filepath = sys.argv[1]
-    if g_filepath[-1]!=os.sep:
+    if g_filepath[-1] != os.sep:
         g_filepath += os.sep
-    g_filepath = g_filepath.replace("/",os.sep)
+    g_filepath = g_filepath.replace("/", os.sep)
 
     port = 8000
-    if len(sys.argv)==3:
+    if len(sys.argv) == 3:
         port = int(sys.argv[2])
 
     run(port)
