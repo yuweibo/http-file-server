@@ -58,6 +58,16 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("content-type", "application/json")
         if os.path.isfile(fn):
+            if(queryParams.has_key("op") and queryParams["op"] == "d"):
+                f = open(fn, 'rb')
+                file_data = f.read()
+                f.close()
+
+                self.send_header("Content-type", "application/octet-stream")
+                self.end_headers()
+                self.wfile.write(file_data)
+                self.send_response(200)
+                return
             f = open(fn, "rb")
             content = f.read().decode('utf-8')
             f.close()
@@ -72,7 +82,9 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     if os.path.isdir(filepath):
                         filename += os.sep
                     mtime = os.path.getmtime(filepath)
-                    filelist.append({"filename": filename, "mtime": mtime})
+                    isfile = os.path.isfile(filepath)
+                    filelist.append(
+                        {"filename": filename, "mtime": mtime, "isfile": isfile})
                     filelist = sorted(
                         filelist, key=lambda e: e.__getitem__('mtime'))
 
@@ -84,8 +96,15 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             content += "<hr>"
             content += "<ul>"
             for o in filelist:
-                content += "<li><a href=\""+path+o["filename"]+"\">"+time.strftime(
-                    "%Y-%m-%d %H:%M:%S", time.localtime(o["mtime"]))+"-"+o["filename"]+"</a>\n"
+                content += "<li>"+time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(o["mtime"]))+"-"+o["filename"]
+                content += "<a href=\""+path + \
+                    o["filename"]+"\">" + \
+                    "<input type=\"button\" value=\"view\">"+"</a>"
+                content += ("" if(o["isfile"] != True) else "<a href=\""+path +
+                            o["filename"]+"?op=d\">" +
+                            "<input type=\"button\" value=\"download\">"+"</a>")
+                content += "</li>"
 
             content += "</ul>"
             content += "<hr>"
