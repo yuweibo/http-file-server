@@ -44,12 +44,26 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         query = urllib.splitquery(self.path)
         path = urllib.unquote_plus(query[0]).decode("utf-8", "ignore")
         queryParams = {}
-        print path
 
         if "?" in self.path:
             if query[1]:
                 queryParams = transDicts(query[1])
-
+        url_download = g_filepath+'url_download'
+        if not os.path.exists(url_download):
+            os.system('mkdir '+url_download)
+        # for service download url
+        if "/service/download/url" == path:
+            url = queryParams["url"]
+            r = os.system('cd '+url_download+' && axel -n 5 '+url)
+            if 0 == r:
+                self.redirect('/url_download/')
+            else:
+                error = {"result:": r}
+                self.wfile.write(json.dumps(error))
+            return
+        elif "/favicon.ico" == path:
+            return
+        
         fn = "%s%s" % (g_filepath, path)
         fn = urllib.unquote_plus(fn).decode("utf-8", "ignore")
         fn = fn.replace("/", os.sep)
@@ -92,6 +106,8 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.send_header("content-type", "text/html")
             content += "<head><meta charset=\"UTF-8\"></head>"
             content += "<html><body>"
+            content += "<hr>"
+            content += "<form action=\"service/download/url\" method=\"get\" >URL:<input type=\"text\" name=\"url\"></input><input type=\"submit\" value=\"下载\"></input><form>"
             content += "<h2>Directory listing for "+path+"</h2>"
             content += "<hr>"
             content += "<ul>"
@@ -158,6 +174,10 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_header("content-type", "application/json")
         self.end_headers()
         self.wfile.write(content)
+
+    def redirect(self, url):
+        self.send_response(302)
+        self.send_header('Location', url)
 
 
 class ThreadingHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
