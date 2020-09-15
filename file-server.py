@@ -107,7 +107,7 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             content += "<head><meta charset=\"UTF-8\"></head>"
             content += "<html><body>"
             content += "<hr>"
-            content += "<form action=\"service/download/url\" method=\"get\" >URL:<input type=\"text\" name=\"url\"></input><input type=\"submit\" value=\"下载\"></input><form>"
+            content += "<form action=\"/service/download/url\" method=\"get\" >URL:<input type=\"text\" name=\"url\"></input><input type=\"submit\" value=\"下载\"></input><form>"
             content += "<h2>Directory listing for "+path+"</h2>"
             content += "<hr>"
             content += "<ul>"
