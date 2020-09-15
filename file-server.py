@@ -13,6 +13,7 @@ import BaseHTTPServer
 import SocketServer
 import mimetypes
 import json
+import shutil
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
@@ -72,15 +73,15 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("content-type", "application/json")
         if os.path.isfile(fn):
-            if(queryParams.has_key("op") and queryParams["op"] == "d"):
-                f = open(fn, 'rb')
-                file_data = f.read()
-                f.close()
-
+            if(queryParams.has_key("op") and queryParams["op"] == "d"):                
+                f = open(fn, 'rb')                
+                fs = os.fstat(f.fileno())
                 self.send_header("Content-type", "application/octet-stream")
+                self.send_header("Content-Length", str(fs[6]))
+                self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
                 self.end_headers()
-                self.wfile.write(file_data)
-                self.send_response(200)
+                shutil.copyfileobj(f, self.wfile)
+                f.close()
                 return
             f = open(fn, "rb")
             content = f.read().decode('utf-8')
