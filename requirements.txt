@@ -1,0 +1,14 @@
+ansible==2.9.10
+autopep8==1.5.4
+cffi==1.14.0
+cryptography==2.9.2
+enum34==1.1.10
+ipaddress==1.0.23
+Jinja2==2.11.2
+MarkupSafe==1.1.1
+pycodestyle==2.6.0
+pycparser==2.20
+PyYAML==5.3.1
+six==1.15.0
+toml==0.10.1
+hurry.filesize==0.9

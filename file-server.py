@@ -14,6 +14,7 @@ import SocketServer
 import mimetypes
 import json
 import shutil
+from hurry.filesize import size as human_size
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
@@ -64,7 +65,7 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             return
         elif "/favicon.ico" == path:
             return
-        
+
         fn = "%s%s" % (g_filepath, path)
         fn = urllib.unquote_plus(fn).decode("utf-8", "ignore")
         fn = fn.replace("/", os.sep)
@@ -73,12 +74,13 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("content-type", "application/json")
         if os.path.isfile(fn):
-            if(queryParams.has_key("op") and queryParams["op"] == "d"):                
-                f = open(fn, 'rb')                
+            if(queryParams.has_key("op") and queryParams["op"] == "d"):
+                f = open(fn, 'rb')
                 fs = os.fstat(f.fileno())
                 self.send_header("Content-type", "application/octet-stream")
                 self.send_header("Content-Length", str(fs[6]))
-                self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
+                self.send_header(
+                    "Last-Modified", self.date_time_string(fs.st_mtime))
                 self.end_headers()
                 shutil.copyfileobj(f, self.wfile)
                 f.close()
@@ -98,8 +100,9 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                         filename += os.sep
                     mtime = os.path.getmtime(filepath)
                     isfile = os.path.isfile(filepath)
+                    size = size = os.path.getsize(filepath)
                     filelist.append(
-                        {"filename": filename, "mtime": mtime, "isfile": isfile})
+                        {"filename": filename, "mtime": mtime, "isfile": isfile, "size": size})
                     filelist = sorted(
                         filelist, key=lambda e: e.__getitem__('mtime'))
 
@@ -113,8 +116,8 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             content += "<hr>"
             content += "<ul>"
             for o in filelist:
-                content += "<li>"+time.strftime(
-                    "%Y-%m-%d %H:%M:%S", time.localtime(o["mtime"]))+"-"+o["filename"]
+                content += "<li>["+time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(o["mtime"]))+"]-["+o["filename"]+"]-["+human_size(o["size"])+"]"
                 content += "<a href=\""+path + \
                     o["filename"]+"\">" + \
                     "<input type=\"button\" value=\"view\">"+"</a>"
