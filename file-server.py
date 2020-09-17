@@ -21,6 +21,8 @@ sys.setdefaultencoding("utf-8")
 mimetypes.init()
 
 g_filepath = ""
+g_download_dir = '/url_download/'
+g_sys_download_dir = g_filepath+g_download_dir
 
 
 def transDicts(params):
@@ -50,15 +52,18 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if "?" in self.path:
             if query[1]:
                 queryParams = transDicts(query[1])
-        url_download = g_filepath+'url_download'
-        if not os.path.exists(url_download):
-            os.system('mkdir '+url_download)
+
+        if not os.path.exists(g_sys_download_dir):
+            os.system('mkdir '+g_sys_download_dir)
         # for service download url
         if "/service/download/url" == path:
             url = queryParams["url"]
-            r = os.system('cd '+url_download+' && axel -n 5 '+url)
+            r = os.system('cd '+g_sys_download_dir +
+                          ' && nohup axel -n 5 '+url+'&')
+            # 过两秒再跳转，可以跳转后看到文件
+            time.sleep(5)
             if 0 == r:
-                self.redirect('/url_download/')
+                self.redirect(g_download_dir)
             else:
                 error = {"result:": r}
                 self.wfile.write(json.dumps(error))
@@ -76,6 +81,11 @@ class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if os.path.isfile(fn):
             if(queryParams.has_key("op") and queryParams["op"] == "d"):
                 f = open(fn, 'rb')
+                if os.path.exists(fn + '.st'):
+                    self.end_headers()
+                    content = json.dumps({'message': '文件下载中，稍后再下载'})
+                    self.wfile.write(content)
+                    return
                 fs = os.fstat(f.fileno())
                 self.send_header("Content-type", "application/octet-stream")
                 self.send_header("Content-Length", str(fs[6]))
@@ -202,6 +212,7 @@ if __name__ == "__main__":
     if g_filepath[-1] != os.sep:
         g_filepath += os.sep
     g_filepath = g_filepath.replace("/", os.sep)
+    g_sys_download_dir = g_filepath+g_download_dir
 
     port = 8000
     if len(sys.argv) == 3:
